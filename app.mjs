@@ -1,106 +1,111 @@
-function my_Fun() {
-  let name = document.getElementById("name").value;
-  let email = document.getElementById("email").value;
-  let address = document.getElementById("address").value;
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
 
-  axios
-    .post("https://crud-applicat.herokuapp.com/user", {
-      name: name,
-      email: email,
-      address: address,
+mongoose.connect(
+  'mongodb+srv://talha-dar:029029090909@cluster0.dvzlh.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
+);
+
+const users = mongoose.model('Users', {
+  name: String,
+  email: String,
+  address: String,
+  contact: Number,
+});
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+//* SETUP FOR CORS NOT COMPULSORY
+app.use(
+  cors({
+    origin: '*',
+    //* SETUP FOR REQUEST METHODS
+    methods: ['GET', 'POST', 'DELETE', 'PUT'],
+  })
+);
+
+//* PARSE THE JSON REQUEST
+app.use(express.json());
+
+//* HOME PAGE
+app.get('/', (req, res) => res.send('Home Page'));
+
+//* GET ALL USERS
+app.get('/users', (req, res) =>
+  users
+    .find({})
+    .then((data) => res.status(200).send(data))
+    .catch((err) => console.log(err))
+);
+
+//* GET SINGLE USER
+app.get('/user/:id', (req, res) => {
+  users
+    .findOne({ _id: req.params.id })
+    .then((data) => res.status(200).send(data))
+    .catch(
+      (err) => (res.status(400).send('An Error Occourde'), console.log(err))
+    );
+});
+
+//* CREATE THE NEW USER
+app.post('/user', (req, res) => {
+  if (
+    !req.body.name ||
+    !req.body.email ||
+    !req.body.address ||
+    !req.body.contact
+  ) {
+    res.status(400).send('Invalid Data');
+  } else {
+    new users({
+      name: req.body.name,
+      email: req.body.email,
+      address: req.body.address,
+      contact: req.body.contact,
     })
-    .then(function (response) {
-      console.log(response);
-      document.getElementById("name").value = "";
-      document.getElementById("email").value = "";
-      document.getElementById("address").value = "";
-      alert(response.data);
+      .save()
+      .then(() => res.status(200).send('User Successfully Created.'))
+      .catch(
+        (err) => (res.status(404).send('An Error Occurred'), console.log(err))
+      );
+  }
+});
+
+//* UPDATE THE SINGLE USER
+app.put('/user/:id', (req, res) => {
+  users
+    .findByIdAndUpdate(req.params.id, {
+      name: req.body.name,
+      email: req.body.email,
+      address: req.body.address,
+      contact: req.body.contact,
     })
-    .catch(function (error) {
-      console.log(error);
-    });
+    .then(() => res.status(200).send('User Updated Successfully.'))
+    .catch(
+      (err) => (res.status(404).send('An Error Occurred'), console.log(err))
+    );
+});
 
-  my_Details();
-}
+// //* DELETE ALL USERS
+app.delete('/users', (req, res) => {
+  users
+    .deleteMany({})
+    .then(() => res.status(200).send('All Users Deleted.'))
+    .catch(
+      (err) => (res.status(404).send('User Not Found.'), console.log(err))
+    );
+});
 
-function my_Details() {
+//* DELETE THE SINGLE USER
+app.delete('/user/:id', (req, res) => {
+  users
+    .findByIdAndDelete(req.params.id)
+    .then(() => res.status(200).send('User Deleted'))
+    .catch(
+      (err) => (res.status(404).send('User Not Found.'), console.log(err))
+    );
+});
 
-  axios
-    .get("https://crud-applicat.herokuapp.com/users")
-    .then(function (response) {
-      console.log(response)
-      $html = "";
-      var i = 0;
-      response.data.forEach(function (data) {
-        id = data._id;
-        console.log(data)
-        $html += '<tr id="'+id+'">';
-        $html += '<td id="name_' +id+ '">' + data.name + '</td>';
-        $html += '<td id="email_' +id+ '">' + data.email + '</td>';
-        $html += '<td id="address_' +id+ '">' + data.address  + '</td>';
-        $html += '<td>';
-        $html += '<button class"btn btn-primary" onclick"get_record(this)"  id="'+i+'>Edit</button>';
-        $html += '<button class"btn btn-danger" onclick"get_record(this)"  id="'+i+'>Delete</button>';
-        $html += '</td>';
-        $html += "</tr>";
-       
-      });
-      document.getElementById("getValue").innerHTML = $html;
-      console.log(response);
-    })
-    .catch(function (error) {
-      console.log(error);
-    })
-    .then(function () {});
-
-
-}
-
-
-// function get_all(){
-//   axios.get('https://crud-applicat.herokuapp.com/users')
-//   .then(function(response){
-//       console.log(response);
-//       $html ='';
-//       response.data.forEach(function(data){
-//           $id = data._id;
-//           console.log(data);
-//           $html+='<tr>';
-//           $html += '<td id="student_name_'+$id+'">'+data.student_name+'</td>';
-//           $html += '<td id="father_name_'+$id+'">'+data.father_name+'</td>';
-//           $html += '<td id="age_'+$id+'">'+data.age+'</td>';
-//           $html += '<td id="roll_no_'+$id+'">'+data.roll_no+'</td>';
-//           $html += '<td><a href="javascript:void(0)" onclick="get_record(this)" id='+$id+'>View</td>';
-//           $html+='</tr>';
-//       })
-//       document.getElementById('tblper').innerHTML = $html;
-//   })
-//   .catch(function(error){
-//       console.log(error)
-//   })
-//   .then(function(){
-  
-//   });
-//   }
-
-
-
-
-function get_record($obj) {
-  var id = $obj.getAttribute('id')
-  id = parseInt(id)
-
-  let names = document.getElementById("name_"+id).innerHTML;
-  let emails = document.getElementById("email_"+id).innerHTML;
-  let addresss = document.getElementById("address_"+id).innerHTML;
-  
-
-
-
-
-
-
-  document.getElementById("name").value = names;
-document.getElementById("email").value = emails;
-  document.getElementById("address").value = addresss;
-}
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));
